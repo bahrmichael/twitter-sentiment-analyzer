@@ -1,0 +1,58 @@
+service: tweepy
+
+provider:
+  name: aws
+  runtime: python3.7
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: ${self:custom.table.arn}
+    - Effect: Allow
+      Action:
+        - comprehend:BatchDetectSentiment
+      Resource: '*'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    pythonBin: python3
+  twitter:
+    consumer_key: ${file(./config.${self:provider.stage}.json):CONSUMER_KEY}
+    consumer_secret: ${file(./config.${self:provider.stage}.json):CONSUMER_SECRET}
+    access_token: ${file(./config.${self:provider.stage}.json):ACCESS_TOKEN}
+    access_token_secret: ${file(./config.${self:provider.stage}.json):ACCESS_TOKEN_SECRET}
+  table:
+    name: ${file(./config.${self:provider.stage}.json):TABLE_NAME}
+    arn: { "Fn::Join": [":", ["arn:aws:dynamodb:${self:provider.region}", { "Ref": "AWS::AccountId" }, "table/${self:custom.table.name}" ] ]  }
+  language: ${file(./config.${self:provider.stage}.json):LANGUAGE}
+  search_query: ${file(./config.${self:provider.stage}.json):SEARCH_QUERY}
+
+functions:
+  tweetCollector:
+    handler: tweetCollector.handle
+    events:
+      - schedule: rate(10 minutes)
+    environment:
+      CONSUMER_KEY: ${self:custom.consumer_key}
+      CONSUMER_SECRET: ${self:custom.consumer_secret}
+      ACCESS_TOKEN: ${self:custom.access_token}
+      ACCESS_TOKEN_SECRET: ${self:custom.access_token_secret}
+      LANGUAGE: ${self:custom.language}
+      SEARCH_QUERY: ${self:custom.search_query}
+      TABLE_NAME: ${self:custom.table.name}
+      REGION: ${self:provider.region}
+
+  tweetAnalyzer:
+    handler: tweetAnalyzer.handle
+    events:
+      - stream: 
+          arn: ${file(./config.${self:provider.stage}.json):STREAM_ARN}
+          batchSize: 25 # comprehend calls must contain no more than 25 documents
+    environment:
+      LANGUAGE: ${self:custom.language}

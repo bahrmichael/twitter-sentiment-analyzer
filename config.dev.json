@@ -1,0 +1,10 @@
+{
+    "CONSUMER_KEY": "REDACTED",
+    "CONSUMER_SECRET": "REDACTED",
+    "ACCESS_TOKEN": "REDACTED",
+    "ACCESS_TOKEN_SECRET": "REDACTED",
+    "SEARCH_QUERY": "$TSLA",
+    "LANGUAGE": "en",
+    "TABLE_NAME": "Tweets",
+    "STREAM_ARN": "arn:aws:dynamodb:REGION_ID:ACCOUNT_ID:table/TABLE_NAME/stream/2020-03-01T13:13:21.721"
+}
